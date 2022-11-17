@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingLeft="2dp"
+    android:paddingRight="2dp"
+    tools:context=".MainActivity"
+    tools:showIn="@layout/activity_main"
+    android:layout_marginTop="15dp"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="90dp"
+            android:layout_height="wrap_content"
+            android:text="Record ID: "
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/record_id"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:ems="2"
+            android:text="001"
+            android:imeOptions="actionDone"/>
+
+        <Button
+            android:id="@+id/record"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginRight="2dp"
+            android:backgroundTint="@color/btn_start_on"
+            android:text="@string/btn_start_on"
+            android:textSize="18sp" />
+        <Button
+            android:id="@+id/cancel"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginRight="2dp"
+            android:backgroundTint="@color/btn_cancel"
+            android:text="@string/btn_cancel"
+            android:textSize="18sp" />
+    </LinearLayout>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Label:"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/label_still"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Still" />
+
+        <RadioButton
+            android:id="@+id/label_walk"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Walking" />
+
+        <RadioButton
+            android:id="@+id/label_upstairs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Upstairs" />
+
+        <RadioButton
+            android:id="@+id/label_downstairs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Downstairs" />
+    </RadioGroup>
+    <RadioGroup
+        android:id="@+id/label_other"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/label_jump"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Jump" />
+    </RadioGroup>
+    <TextView
+        android:id="@+id/info"
+        android:layout_marginTop="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</LinearLayout>
