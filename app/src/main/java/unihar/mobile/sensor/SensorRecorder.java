@@ -1,4 +1,4 @@
-package unihar.mobile;
+package unihar.mobile.sensor;
 
 import android.hardware.SensorEvent;
 import android.os.Build;
@@ -13,6 +13,9 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
+
+import unihar.mobile.MainActivity;
+import unihar.mobile.Utils;
 
 public class SensorRecorder {
 

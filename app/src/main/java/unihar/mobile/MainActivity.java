@@ -2,19 +2,14 @@ package unihar.mobile;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -25,6 +20,10 @@ import android.widget.Toast;
 
 import java.util.Date;
 import java.util.List;
+
+import unihar.mobile.model.ClassificationModelHelper;
+import unihar.mobile.model.ModelHelper;
+import unihar.mobile.sensor.SensorRecorder;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -57,6 +56,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorRecorder = new SensorRecorder(null);
         registerSensorListener();
         Utils.checkPermission(this);
+
+        ModelHelper modelHelper = new ClassificationModelHelper(this);
+        modelHelper.initFromAsset("t2.tflite");
+        int[] inferLabels = modelHelper.infer(Utils.randomFloat3Array(new int[]{7, 28, 28}));
+//        modelHelper.train(Utils.randomFloat3Array(new int[]{25, 28, 28}), Utils.randomFloat2Array(new int[]{25, 10}, 10),5);
+//        modelHelper.train();
     }
 
     private void initView()
