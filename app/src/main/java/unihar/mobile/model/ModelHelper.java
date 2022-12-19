@@ -3,8 +3,8 @@ package unihar.mobile.model;
 import android.app.Activity;
 
 import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.gpu.CompatibilityList;
-import org.tensorflow.lite.gpu.GpuDelegate;
+//import org.tensorflow.lite.gpu.CompatibilityList;
+//import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,21 +18,19 @@ import unihar.mobile.Utils;
 public abstract class ModelHelper {
 
     protected Interpreter interpreter;
-    protected int classNum = 10;
     protected int batchSize = 10;
     protected String saveModelPath;
     protected Activity activity;
 
     public ModelHelper(Activity activity){
         this.activity = activity;
-        saveModelPath = Config.RECORD_PATH + File.separator + "model.ckpt";
     }
 
     public void initFromAsset(String assetName){
         MappedByteBuffer modelBuffer = null;
         try {
             modelBuffer = Utils.loadModelFile(activity, assetName);
-            interpreter = new Interpreter(modelBuffer, getOptions());
+            interpreter = new Interpreter(modelBuffer); // , getOptions()
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -41,25 +39,25 @@ public abstract class ModelHelper {
 
     public void initFromFile(String modelName){
         File modelFile = new File(Config.RECORD_PATH + File.separator + modelName);
-        interpreter = new Interpreter(modelFile, getOptions());
+        interpreter = new Interpreter(modelFile); // , getOptions()
         restore();
     }
 
-    private Interpreter.Options getOptions(){
-        Interpreter.Options options = new Interpreter.Options();
-        CompatibilityList compatList = new CompatibilityList();
-
-        if(compatList.isDelegateSupportedOnThisDevice()){
-            // if the device has a supported GPU, add the GPU delegate
-            GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
-            GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
-            options.addDelegate(gpuDelegate);
-        } else {
-            // if the GPU is not supported, run on 4 threads
-            options.setNumThreads(4);
-        }
-        return null;
-    }
+//    private Interpreter.Options getOptions(){
+//        Interpreter.Options options = new Interpreter.Options();
+//        CompatibilityList compatList = new CompatibilityList();
+//
+//        if(compatList.isDelegateSupportedOnThisDevice()){
+//            // if the device has a supported GPU, add the GPU delegate
+//            GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
+//            GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
+//            options.addDelegate(gpuDelegate);
+//        } else {
+//            // if the GPU is not supported, run on 4 threads
+//            options.setNumThreads(4);
+//        }
+//        return null;
+//    }
 
     public abstract void train(float[][][] trainingData, float[][] trainingLabels, int numEpochs);
 

@@ -8,4 +8,5 @@
 
     <include layout="@layout/control_record"/>
 
+
 </androidx.constraintlayout.widget.ConstraintLayout>

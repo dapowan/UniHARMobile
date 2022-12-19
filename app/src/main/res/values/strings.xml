@@ -3,4 +3,6 @@
     <string name="btn_start_on">START</string>
     <string name="btn_start_off">STOP</string>
     <string name="btn_cancel">CANCEL</string>
+    <string name="btn_test_ae">TEST AE</string>
+    <string name="btn_test_re">TEST RE</string>
 </resources>

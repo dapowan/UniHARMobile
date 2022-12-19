@@ -3,13 +3,10 @@ package unihar.mobile;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -19,13 +16,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Date;
-import java.util.List;
 
-import unihar.mobile.model.ClassificationModelHelper;
+import unihar.mobile.model.AutoencoderModelHelper;
 import unihar.mobile.model.ModelHelper;
-import unihar.mobile.sensor.SensorRecorder;
+import unihar.mobile.model.RecognizerModelHelper;
+import unihar.mobile.sensor.SensorCollector;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity{
 
 
 
@@ -36,13 +33,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private RadioGroup labelRadioGroup;
     private RadioGroup labelRadioGroupOther;
 
-    private SensorManager sensorManager;
-    private SensorRecorder sensorRecorder;
-
-
     private int recordNum;
+    private SensorCollector sensorCollector;
     private boolean recorded = false;
-    private int label = Config.LABEL_ACTIVITY_STILL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,18 +43,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         recoverRecordNum(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        List<Sensor> deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
-        Log.i("Available Sensors", deviceSensors.toString());
-        sensorRecorder = new SensorRecorder(null);
-        registerSensorListener();
-        Utils.checkPermission(this);
 
-        ModelHelper modelHelper = new ClassificationModelHelper(this);
-        modelHelper.initFromAsset("t2.tflite");
-        int[] inferLabels = modelHelper.infer(Utils.randomFloat3Array(new int[]{7, 28, 28}));
-//        modelHelper.train(Utils.randomFloat3Array(new int[]{25, 28, 28}), Utils.randomFloat2Array(new int[]{25, 10}, 10),5);
-//        modelHelper.train();
+        Utils.checkPermission(this);
+        sensorCollector = new SensorCollector(this);
+
+        Button testAEBtn = findViewById(R.id.test_ae);
+        testAEBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ModelHelper autoencoderModelHelper = new AutoencoderModelHelper(MainActivity.this);
+                autoencoderModelHelper.initFromAsset("ae.tflite");
+                autoencoderModelHelper.train(Utils.randomFloat3Array(new int[]{64, 20, 6}), 1);
+            }
+        });
+
+        Button testREBtn = findViewById(R.id.test_re);
+        testREBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ModelHelper recognizerModelHelper = new RecognizerModelHelper(MainActivity.this);
+                recognizerModelHelper.initFromAsset("re.tflite");
+                int[] inferLabels = recognizerModelHelper.infer(Utils.randomFloat3Array(new int[]{64, 20, 6}));
+            }
+        });
+
+
     }
 
     private void initView()
@@ -108,8 +114,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             String recordText = Utils.unifyIDText(recordNum);
             if(recorded){
                 recorded = false;
-                Log.i("Path", Utils.dataFolderPath(recordText));
-                if(sensorRecorder.saveAllData(Utils.dataFolderPath(recordText))){
+                if(sensorCollector.save(recordText)){
                     infoView.setText(recordText + " saved successfully!");
                 }else {
                     infoView.setText(recordText + " saved failed! Some file may not be saved successfully.");
@@ -119,7 +124,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 recordNum++;
                 recordIDText.setText(recordText);
             }else {
-                sensorRecorder.addLabelItem(label);
                 recorded = true;
                 recordBtn.setText(getString(R.string.btn_start_off));
                 recordBtn.setBackgroundColor(getColor(R.color.btn_start_off));
@@ -130,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         cancelBtn.setOnClickListener(v -> {
             if(recorded){
                 recorded = false;
-                sensorRecorder.clearSensorData();
+                sensorCollector.stop();
                 infoView.setText(Utils.unifyIDText(recordNum) + " cancelled.");
                 recordBtn.setText(getString(R.string.btn_start_on));
                 recordBtn.setBackgroundColor(getColor(R.color.btn_start_on));
@@ -143,31 +147,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         labelRadioGroupOther.setOnCheckedChangeListener(labelChangeListener);
     }
 
-    private void registerSensorListener()
-    {
-        for (int i = 0; i < Config.SENSOR_LISTS.size(); i++){
-            Sensor sensor = sensorManager.getDefaultSensor(Config.SENSOR_LISTS.get(i));
-            if(sensor != null) {
-                sensorManager.registerListener(this, sensor, Config.SAMPLE_RATE);
-                sensorRecorder.initSensorSet(Config.SENSOR_LISTS.get(i), Config.SENSOR_NAME_LISTS.get(i));
-            }
-            else {
-                Log.w("Sensor Missing", Config.SENSOR_NAME_LISTS.get(i));
-            }
-        }
-    }
 
-    @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
-        if(recorded) {
-            sensorRecorder.addSensorItem(sensorEvent.sensor.getType(), sensorEvent);
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
-
-    }
 
     private void recoverRecordNum(Bundle savedInstanceState){
         String date = Config.DATE_FORMAT.format(new Date());
@@ -182,7 +162,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void onCheckedChanged(RadioGroup group, int checkedId) {
             int id = group.getCheckedRadioButtonId();
+            int label = Config.LABEL_ACTIVITY_NONE;
             switch (id) {
+                case R.id.label_none:
+                    label = Config.LABEL_ACTIVITY_NONE;
+                    clearLabelGroup(labelRadioGroupOther);
+                    break;
                 case R.id.label_still:
                     label = Config.LABEL_ACTIVITY_STILL;
                     clearLabelGroup(labelRadioGroupOther);
@@ -207,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     Log.w("Unknown Label", id + "");
                     break;
             }
-            if(recorded) sensorRecorder.addLabelItem(label);
+            if(recorded) sensorCollector.updateLabel(label);
         }
     };
     private void clearLabelGroup(RadioGroup group){

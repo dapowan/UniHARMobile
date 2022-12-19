@@ -23,25 +23,15 @@ public class SensorRecorder {
     private Hashtable<Integer, String> sensorNameSet;
     private Hashtable<Integer, Long> sensorTimeSet;
     private Hashtable<Integer, Integer> sensorSampleRateSet;
-    private ArrayList<String> labelSet;
-    private MainActivity mainActivity;
-    private boolean recordSampleRate;
+    private boolean recordSampleRate = true;
+    private int label;
 
-    public SensorRecorder(MainActivity mainActivity) {
-        if(mainActivity == null)
-            recordSampleRate = false;
-        else {
-            recordSampleRate = true;
-            this.mainActivity = mainActivity;
-        }
+    public SensorRecorder() {
 
         sensorSet = new Hashtable<>();
         sensorNameSet = new Hashtable<>();
         sensorTimeSet = new Hashtable<>();
         sensorSampleRateSet = new Hashtable<>();
-        labelSet = new ArrayList<>();
-//        boolean a = Utils.createFolder(Config.RECORD_PATH);
-//        a = true;
     }
 
     public void initSensorSet(int sensorType, String sensorName){
@@ -58,12 +48,10 @@ public class SensorRecorder {
         if(sensorNameSet != null) sensorNameSet.clear();
         if(sensorTimeSet != null) sensorTimeSet.clear();
         if(sensorSampleRateSet != null) sensorSampleRateSet.clear();
-        if(labelSet != null) labelSet.clear();
     }
 
-    public void addLabelItem(int label){
-        long timestamp = new Date().getTime();
-        labelSet.add(timestamp + "," + label);
+    public void setLabel(int label) {
+        this.label = label;
     }
 
     public void addSensorItem(int sensorType, SensorEvent sensorEvent){
@@ -75,7 +63,6 @@ public class SensorRecorder {
             if(recordSampleRate) {
                 if (timestamp - sensorTimeSet.get(sensorType) > 1000) {
                     sensorTimeSet.put(sensorType, timestamp);
-//                    mainActivity.sampleRateChange(sensorType, sensorSampleRateSet.get(sensorType));
                     sensorSampleRateSet.put(sensorType, 0);
                 } else {
                     sensorSampleRateSet.put(sensorType, sensorSampleRateSet.get(sensorType) + 1);
@@ -92,7 +79,6 @@ public class SensorRecorder {
         for(Hashtable.Entry<Integer, ArrayList<String>> entry : sensorSet.entrySet()){
             result = result && saveFile(baseDir + File.separator + sensorNameSet.get(entry.getKey()) + ".csv", entry.getValue());
         }
-        result = result && saveFile(baseDir + File.separator + "Label.csv", labelSet);
         clearSensorData();
         return result;
     }
@@ -101,7 +87,6 @@ public class SensorRecorder {
         for(Hashtable.Entry<Integer, ArrayList<String>> entry : sensorSet.entrySet()){
             entry.getValue().clear();
         }
-        labelSet.clear();
 //        turnSet.clear();
     }
 

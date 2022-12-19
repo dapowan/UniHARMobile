@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Config {
+    public static final int LABEL_ACTIVITY_NONE = 0;
     public static final int LABEL_ACTIVITY_STILL = 1;
     public static final int LABEL_ACTIVITY_WALKING = 2;
     public static final int LABEL_ACTIVITY_UPSTAIRS = 3;

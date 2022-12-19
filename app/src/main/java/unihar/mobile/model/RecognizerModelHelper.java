@@ -1,0 +1,71 @@
+package unihar.mobile.model;
+
+import android.app.Activity;
+import android.util.Log;
+
+import java.io.File;
+import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.Map;
+
+import unihar.mobile.Config;
+import unihar.mobile.Utils;
+
+public class RecognizerModelHelper extends ModelHelper{
+
+    private int classNum = 4;
+
+    public RecognizerModelHelper(Activity activity){
+        super(activity);
+        batchSize = 64;
+        saveModelPath = Config.RECORD_PATH + File.separator + "recognizer.ckpt";
+    }
+
+    public void train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){
+    }
+
+    public int[] infer(float[][][] inferData){
+        int inferSize = inferData.length;
+        int sampleSize = inferData[0].length * inferData[0][0].length;
+        int[] inferLabels = new int[inferSize];
+        long timeTag = (long) 0.0;
+
+        for (int i = 0; i < inferSize; i += batchSize) {
+            long start = System.currentTimeMillis();
+
+            int index_end = Math.min(i + batchSize, inferSize);
+            float[][][] inferInputsBatch = Utils.copyFloat3Array(inferData, i, index_end);
+
+            FloatBuffer inferInputs = FloatBuffer.allocate(batchSize * sampleSize);
+            inferInputs = Utils.addFloat3Array(inferInputs, inferInputsBatch);
+            Map<String, Object> inputs = new HashMap<>();
+            inputs.put("x", inferInputs);
+
+            FloatBuffer inferProbs = FloatBuffer.allocate(batchSize * classNum);
+            Map<String, Object> outputs = new HashMap<>();
+            outputs.put("probabilities", inferProbs);
+
+            interpreter.runSignature(inputs, outputs, "infer");
+
+            inferProbs.rewind();
+
+            for (int b = 0; b < batchSize && (i + b) < inferSize; ++b) {
+                int index = 0;
+                for (int c = 1; c < classNum; ++c) {
+                    if (inferProbs.get(b * classNum + index) < inferProbs.get(b * classNum + c))
+                        index = c;
+                }
+                inferLabels[i + b] = index;
+            }
+            long elapsedTimeMillis = System.currentTimeMillis() - start;
+            timeTag += elapsedTimeMillis;
+            Log.i("Recognizer infer time", "millis: " + elapsedTimeMillis);
+        }
+        return inferLabels;
+    }
+
+    @Override
+    public void train(float[][][] trainingData, int numEpochs) {
+
+    }
+}
