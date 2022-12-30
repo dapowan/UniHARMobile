@@ -5,30 +5,25 @@ import static unihar.mobile.Utils.contains;
 import android.app.Activity;
 import android.util.Log;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
-import java.io.File;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.IntStream;
 
 import unihar.mobile.Config;
 import unihar.mobile.Utils;
 
 public class AutoencoderModelHelper extends ModelHelper{
 
-    private float maskRatio = 0.15f;
+    private float maskRatio = Config.MASK_RATIO;
 
-    public AutoencoderModelHelper(Activity activity){
-        super(activity);
-        this.batchSize = 64;
-        saveModelPath = Config.RECORD_PATH + File.separator + "autoencoder.ckpt";
+    public AutoencoderModelHelper(Activity activity, String saveModelPath){
+        super(activity, saveModelPath);
     }
 
     @Override

@@ -13,12 +13,11 @@ import unihar.mobile.Utils;
 
 public class RecognizerModelHelper extends ModelHelper{
 
-    private int classNum = 4;
+    private int classNum = Config.ACTIVITY_NUM;
 
-    public RecognizerModelHelper(Activity activity){
-        super(activity);
-        batchSize = 64;
-        saveModelPath = Config.RECORD_PATH + File.separator + "recognizer.ckpt";
+    public RecognizerModelHelper(Activity activity, String saveModelPath){
+        super(activity, saveModelPath);
+        saveModelPath = Config.SAVE_PATH + File.separator + "recognizer.ckpt";
     }
 
     public void train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){

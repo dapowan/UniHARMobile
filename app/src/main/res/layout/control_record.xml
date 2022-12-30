@@ -34,61 +34,61 @@
             android:imeOptions="actionDone"/>
 
     </LinearLayout>
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Label:"
-        android:textColor="#000000"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+<!--    <TextView-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Label:"-->
+<!--        android:textColor="#000000"-->
+<!--        android:textSize="18sp"-->
+<!--        android:textStyle="bold" />-->
 
-    <RadioGroup
-        android:id="@+id/label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <RadioButton
-            android:id="@+id/label_none"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="None" />
-        <RadioButton
-            android:id="@+id/label_still"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Still" />
+<!--    <RadioGroup-->
+<!--        android:id="@+id/label"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal">-->
+<!--        <RadioButton-->
+<!--            android:id="@+id/label_none"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:checked="true"-->
+<!--            android:text="None" />-->
+<!--        <RadioButton-->
+<!--            android:id="@+id/label_still"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Still" />-->
 
-        <RadioButton
-            android:id="@+id/label_walk"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Walking" />
+<!--        <RadioButton-->
+<!--            android:id="@+id/label_walk"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Walking" />-->
 
-        <RadioButton
-            android:id="@+id/label_upstairs"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Upstairs" />
+<!--        <RadioButton-->
+<!--            android:id="@+id/label_upstairs"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Upstairs" />-->
 
-        <RadioButton
-            android:id="@+id/label_downstairs"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Downstairs" />
-    </RadioGroup>
-    <RadioGroup
-        android:id="@+id/label_other"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+<!--        <RadioButton-->
+<!--            android:id="@+id/label_downstairs"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Downstairs" />-->
+<!--    </RadioGroup>-->
+<!--    <RadioGroup-->
+<!--        android:id="@+id/label_other"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal">-->
 
-        <RadioButton
-            android:id="@+id/label_jump"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Jump" />
-    </RadioGroup>
+<!--        <RadioButton-->
+<!--            android:id="@+id/label_jump"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Jump" />-->
+<!--    </RadioGroup>-->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -129,9 +129,33 @@
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="120dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Model Control: "
+            android:text="Recognizer Control: "
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/test_re"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginRight="2dp"
+            android:backgroundTint="@color/black"
+            android:text="@string/btn_test_re"
+            android:textSize="18sp" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Autoencoder Control: "
             android:textColor="#000000"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -143,20 +167,10 @@
             android:layout_marginLeft="8dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
-            android:backgroundTint="@color/btn_start_on"
+            android:backgroundTint="@color/black"
             android:text="@string/btn_test_ae"
             android:textSize="18sp" />
 
-        <Button
-            android:id="@+id/test_re"
-            android:layout_width="120dp"
-            android:layout_height="40dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginTop="2dp"
-            android:layout_marginRight="2dp"
-            android:backgroundTint="@color/btn_start_on"
-            android:text="@string/btn_test_re"
-            android:textSize="18sp" />
     </LinearLayout>
     <TextView
         android:id="@+id/info"

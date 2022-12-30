@@ -18,12 +18,13 @@ import unihar.mobile.Utils;
 public abstract class ModelHelper {
 
     protected Interpreter interpreter;
-    protected int batchSize = 10;
+    protected int batchSize;
     protected String saveModelPath;
     protected Activity activity;
 
-    public ModelHelper(Activity activity){
+    public ModelHelper(Activity activity, String saveModelPath){
         this.activity = activity;
+        this.saveModelPath = saveModelPath;
     }
 
     public void initFromAsset(String assetName){
@@ -38,7 +39,7 @@ public abstract class ModelHelper {
     }
 
     public void initFromFile(String modelName){
-        File modelFile = new File(Config.RECORD_PATH + File.separator + modelName);
+        File modelFile = new File(Config.SAVE_PATH + File.separator + modelName);
         interpreter = new Interpreter(modelFile); // , getOptions()
         restore();
     }
@@ -87,5 +88,13 @@ public abstract class ModelHelper {
             Map<String, Object> outputs = new HashMap<>();
             interpreter.runSignature(inputs, outputs, "restore");
         }
+    }
+
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
 }

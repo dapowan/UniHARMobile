@@ -2,7 +2,6 @@ package unihar.mobile;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -10,16 +9,15 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
+import android.util.Log;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.math3.geometry.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -30,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 
@@ -40,9 +37,9 @@ public class Utils {
         return String.format("%03d", id);
     }
 
-    public static String dataFolderPath(String recordName){
+    public static String dataFolderPath(){
         String date = Config.DATE_FORMAT.format(new Date());
-        return Config.RECORD_PATH + File.separator + date + File.separator + recordName;
+        return Config.SAVE_PATH + File.separator + date;
     }
 
     public static void checkPermission(Activity activity){
@@ -83,6 +80,14 @@ public class Utils {
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
+    public static float average(float[] arr) {
+        float sum = 0;
+        for (int i = 0; i < arr.length; i++) {
+            sum += arr[i];
+        }
+        return sum / arr.length;
     }
 
     public static float[][][] randomFloat3Array(int[] shape){
@@ -233,6 +238,15 @@ public class Utils {
         return Arrays.asList(arr).contains(key);
     }
 
+    public static String floatArrayToString(float[] data) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < data.length; i++) {
+            if (i != 0) stringBuilder.append(",");
+            stringBuilder.append(data[i]);
+        }
+        return stringBuilder.toString();
+    }
+
     public static double[][][] randomRotation(int size){
         double[][][] rotations = new double[size][3][3];
         Random rd1 = new Random();
@@ -250,5 +264,53 @@ public class Utils {
                     , false).getMatrix();
         }
         return rotations;
+    }
+
+    public static boolean saveFile(String path, ArrayList<String> data){
+        File file = new File(path);
+        try {
+            if(file.exists()) file.delete();
+            if(file.createNewFile()) {
+                FileWriter fw = new FileWriter(file);
+                BufferedWriter bw = new BufferedWriter(fw);
+                for (int i = 0; i < data.size(); i++) {
+                    if (i != 0)
+                        bw.newLine();
+                    bw.write(data.get(i));
+                }
+                bw.close();
+                fw.close();
+                return true;
+            }
+        }catch (Exception e){
+            Log.e("file create error", path);
+        }
+        return false;
+    }
+
+    public static float[][] floatListToArray(ArrayList<float[]> data){
+        if (data.size() < 1) return null;
+        float[][] floats = new float[data.size()][data.get(0).length];
+        for(int i = 0;i < data.size(); i++){
+            floats[i] = data.get(i);
+        }
+        return floats;
+    }
+
+    public static float[][][] sequeeze(float[][] data){
+        if(data == null || data.length == 0 || data[0].length == 0) return null;
+        float[][][] dataNew = new float[1][data.length][data[0].length];
+        dataNew[0] = data;
+        return dataNew;
+    }
+
+    public static float[][] concat(float[][] first, float[][] second) {
+        float[][] both = Arrays.copyOf(first, first.length+second.length);
+        System.arraycopy(second, 0, both, first.length, second.length);
+        return both;
+    }
+
+    public static String unifyNumberText(float f){
+        return String.format("%.2f", f);
     }
 }

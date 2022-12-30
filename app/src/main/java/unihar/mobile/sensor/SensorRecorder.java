@@ -1,53 +1,43 @@
 package unihar.mobile.sensor;
 
 import android.hardware.SensorEvent;
-import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
-
-import androidx.annotation.RequiresApi;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Hashtable;
+import java.util.Map;
 
-import unihar.mobile.MainActivity;
+import unihar.mobile.Config;
 import unihar.mobile.Utils;
 
 public class SensorRecorder {
 
-    private Hashtable<Integer, ArrayList<String>> sensorSet;
+    private ArrayList<SensorEventContainer> sensorSet;
     private Hashtable<Integer, String> sensorNameSet;
-    private Hashtable<Integer, Long> sensorTimeSet;
-    private Hashtable<Integer, Integer> sensorSampleRateSet;
-    private boolean recordSampleRate = true;
-    private int label;
+    private int label = Config.LABEL_ACTIVITY_NONE;
+    private int samplingDelay;
+    private int bufferMaxNum = Config.BUFFER_MAX_NUM;
 
-    public SensorRecorder() {
 
-        sensorSet = new Hashtable<>();
+    public SensorRecorder(int samplingDelay) {
+        this.samplingDelay = samplingDelay;
+        sensorSet = new ArrayList<>();
         sensorNameSet = new Hashtable<>();
-        sensorTimeSet = new Hashtable<>();
-        sensorSampleRateSet = new Hashtable<>();
     }
 
     public void initSensorSet(int sensorType, String sensorName){
-        if(!sensorSet.containsKey(sensorType)){
-            sensorSet.put(sensorType, new ArrayList<String>());
+        if(!sensorNameSet.containsKey(sensorType)){
             sensorNameSet.put(sensorType, sensorName);
-            sensorTimeSet.put(sensorType, new Date().getTime());
-            sensorSampleRateSet.put(sensorType, 0);
         }
     }
 
     public void clearSensorSet(){
         if(sensorSet != null) sensorSet.clear();
         if(sensorNameSet != null) sensorNameSet.clear();
-        if(sensorTimeSet != null) sensorTimeSet.clear();
-        if(sensorSampleRateSet != null) sensorSampleRateSet.clear();
     }
 
     public void setLabel(int label) {
@@ -55,77 +45,142 @@ public class SensorRecorder {
     }
 
     public void addSensorItem(int sensorType, SensorEvent sensorEvent){
-        if(sensorSet.containsKey(sensorType)) {
-            float[] data = sensorEvent.values;
+        if (sensorNameSet.containsKey(sensorType)) {
             long timestamp = System.currentTimeMillis()
                     + (sensorEvent.timestamp - SystemClock.elapsedRealtimeNanos()) / 1000000;
-            sensorSet.get(sensorType).add("" + timestamp + floatArrayToString(data));
-            if(recordSampleRate) {
-                if (timestamp - sensorTimeSet.get(sensorType) > 1000) {
-                    sensorTimeSet.put(sensorType, timestamp);
-                    sensorSampleRateSet.put(sensorType, 0);
-                } else {
-                    sensorSampleRateSet.put(sensorType, sensorSampleRateSet.get(sensorType) + 1);
+            long timeTag = timestamp / this.samplingDelay * this.samplingDelay;
+            int s = sensorSet.size();
+            if (s == 0 || sensorSet.get(s - 1).timeTag != timeTag) {
+                SensorEventContainer sensorEventContainer = new SensorEventContainer(timeTag, label);
+                sensorEventContainer.insertSensorEvent(sensorType, sensorEvent.values);
+                sensorSet.add(sensorEventContainer);
+                if (sensorSet.size() - bufferMaxNum > 0) {
+                    sensorSet.subList(0, sensorSet.size() - bufferMaxNum).clear();
                 }
+            } else {
+                SensorEventContainer sensorEventContainer = sensorSet.get(s - 1);
+                sensorEventContainer.insertSensorEvent(sensorType, sensorEvent.values);
             }
         }else {
             Log.w("Adding Wrong Sensor Data", sensorNameSet.get(sensorType));
         }
     }
 
-    public boolean saveAllData(String baseDir){
-        boolean result = true;
-        if(!Utils.createFolder(baseDir)) return false;
-        for(Hashtable.Entry<Integer, ArrayList<String>> entry : sensorSet.entrySet()){
-            result = result && saveFile(baseDir + File.separator + sensorNameSet.get(entry.getKey()) + ".csv", entry.getValue());
+    public boolean saveData(String filePath){
+        ArrayList<Integer> sensors = new ArrayList<>();
+        StringBuilder header = new StringBuilder();
+        header.append("Timestamp,");
+        for(Map.Entry<Integer, String> entry : sensorNameSet.entrySet()){
+            sensors.add(entry.getKey());
+            header.append(entry.getValue()).append("_x,");
+            header.append(entry.getValue()).append("_y,");
+            header.append(entry.getValue()).append("_z,");
+        }
+        header.append("Label");
+        ArrayList<String> data = new ArrayList<>();
+        data.add(header.toString());
+        for(int i = 0; i < sensorSet.size(); i++){
+            SensorEventContainer sensorEventContainer = sensorSet.get(i);
+            Hashtable<Integer, float[]> readings = sensorEventContainer.getAverageSensorReadings();
+            if (readings != null){
+                StringBuilder item = new StringBuilder();
+                item.append(sensorEventContainer.timeTag).append(',');
+                boolean tag = true;
+                for(int j = 0; j < sensors.size(); j++){
+                    if (readings.containsKey(sensors.get(j)) && readings.get(sensors.get(j)) != null){
+                        item.append(Utils.floatArrayToString(readings.get(sensors.get(j))));
+                        item.append(',');
+                    }else {
+                        tag = false;
+                    }
+                }
+                item.append(sensorEventContainer.label);
+                if (tag){
+                    data.add(item.toString());
+                }
+            }
         }
         clearSensorData();
-        return result;
-    }
+        if (data.size() > 0) {
 
-    public void clearSensorData(){
-        for(Hashtable.Entry<Integer, ArrayList<String>> entry : sensorSet.entrySet()){
-            entry.getValue().clear();
-        }
-//        turnSet.clear();
-    }
-
-    private boolean saveFile(String path, ArrayList<String> data){
-        File file = new File(path);
-        try {
-            if(file.exists()) file.delete();
-            if(file.createNewFile()) {
-                FileWriter fw = new FileWriter(file);
-                BufferedWriter bw = new BufferedWriter(fw);
-                for (int i = 0; i < data.size(); i++) {
-                    if (i != 0)
-                        bw.newLine();
-                    bw.write(data.get(i));
-                }
-                bw.close();
-                fw.close();
-                return true;
-            }
-        }catch (Exception e){
-            Log.e("file create error", path);
+            return Utils.saveFile(filePath + "_" + samplingDelay + ".csv", data);
         }
         return false;
     }
 
-    private String floatArrayToString(float[] data) {
-        String s = "";
-        for (int i = 0; i < data.length; i++) {
-            s += "," + data[i];
-        }
-        return s;
+    public void clearSensorData(){
+        sensorSet.clear();
     }
 
-    private double average(double[] arr) {
-        double sum = 0;
-        for (int i = 0; i < arr.length; i++) {
-            sum += arr[i];
+    public Hashtable<Integer, ArrayList<float[]>> getLatestReadings(int num){
+        if (num > sensorSet.size()) return null;
+        Hashtable<Integer, ArrayList<float[]>> lastetReadings = new Hashtable<>();
+        for(Map.Entry<Integer, String> entry : sensorNameSet.entrySet()){
+            lastetReadings.put(entry.getKey(), new ArrayList<>());
         }
-        return sum / arr.length;
+        for(int i = sensorSet.size() - num; i < sensorSet.size(); i++){
+            SensorEventContainer sensorEventContainer = sensorSet.get(i);
+            Hashtable<Integer, float[]> readings = sensorEventContainer.getAverageSensorReadings();
+            if (readings != null){
+                for(Map.Entry<Integer, float[]> entry : readings.entrySet()){
+                    if (lastetReadings.containsKey(entry.getKey()) && entry.getValue() != null)
+                    {
+                        lastetReadings.get(entry.getKey()).add(entry.getValue());
+                    }else {
+                        return null;
+                    }
+                }
+            }
+        }
+        return lastetReadings;
     }
 
+    public void setBufferMaxNum(int bufferMaxNum) {
+        this.bufferMaxNum = bufferMaxNum;
+    }
+
+    private class SensorEventContainer{
+
+        public long timeTag;
+        public int label;
+        public Hashtable<Integer, ArrayList<float[]>> sensorEvents;
+
+        public SensorEventContainer(long timeTag, int label){
+            this.timeTag = timeTag;
+            this.label = label;
+            this.sensorEvents = new Hashtable<>();
+        }
+
+        public void insertSensorEvent(int sensorType, float[] sensorValues){
+            if(sensorEvents.containsKey(sensorType)){
+                sensorEvents.get(sensorType).add(sensorValues);
+            }else{
+                ArrayList<float[]> sensor = new ArrayList<>();
+                sensor.add(sensorValues);
+                sensorEvents.put(sensorType, sensor);
+            }
+
+        }
+
+        public Hashtable<Integer, float[]> getAverageSensorReadings(){
+            Hashtable<Integer, float[]> averageReadings = new Hashtable<>();
+            for(Map.Entry<Integer, ArrayList<float[]>> entry : sensorEvents.entrySet()){
+                int sensorEventNum = entry.getValue().size();
+                if(sensorEventNum == 0){
+                    return null;
+                }
+                int sensorReadingNum = entry.getValue().get(0).length;
+                float[] sensorAverageReadings = new float[sensorReadingNum];
+                for(int i = 0; i < sensorReadingNum; i++){
+                    float[] values = new float[sensorEventNum];
+                    for(int j = 0; j < sensorEventNum; j++){
+                        values[j] = entry.getValue().get(j)[i];
+                    }
+                    sensorAverageReadings[i] = Utils.average(values);
+                }
+                averageReadings.put(entry.getKey(), sensorAverageReadings);
+            }
+            return averageReadings;
+        }
+    }
 }
