@@ -104,24 +104,24 @@
 
         <Button
             android:id="@+id/record"
-            android:layout_width="120dp"
+            android:layout_width="105dp"
             android:layout_height="40dp"
-            android:layout_marginLeft="8dp"
+            android:layout_marginLeft="2dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
             android:backgroundTint="@color/btn_start_on"
             android:text="@string/btn_start_on"
-            android:textSize="18sp" />
+            android:textSize="16sp" />
         <Button
             android:id="@+id/cancel"
-            android:layout_width="120dp"
+            android:layout_width="105dp"
             android:layout_height="40dp"
             android:layout_marginLeft="5dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
             android:backgroundTint="@color/btn_cancel"
             android:text="@string/btn_cancel"
-            android:textSize="18sp" />
+            android:textSize="16sp" />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -140,7 +140,7 @@
             android:id="@+id/test_re"
             android:layout_width="120dp"
             android:layout_height="40dp"
-            android:layout_marginLeft="8dp"
+            android:layout_marginLeft="4dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
             android:backgroundTint="@color/black"
@@ -164,7 +164,7 @@
             android:id="@+id/test_ae"
             android:layout_width="120dp"
             android:layout_height="40dp"
-            android:layout_marginLeft="8dp"
+            android:layout_marginLeft="4dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
             android:backgroundTint="@color/black"

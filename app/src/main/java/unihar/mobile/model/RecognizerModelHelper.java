@@ -20,14 +20,14 @@ public class RecognizerModelHelper extends ModelHelper{
         saveModelPath = Config.SAVE_PATH + File.separator + "recognizer.ckpt";
     }
 
-    public void train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){
+    public float train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){
+        return (float)0.0;
     }
 
     public int[] infer(float[][][] inferData){
         int inferSize = inferData.length;
         int sampleSize = inferData[0].length * inferData[0][0].length;
         int[] inferLabels = new int[inferSize];
-        long timeTag = (long) 0.0;
 
         for (int i = 0; i < inferSize; i += batchSize) {
             long start = System.currentTimeMillis();
@@ -36,7 +36,7 @@ public class RecognizerModelHelper extends ModelHelper{
             float[][][] inferInputsBatch = Utils.copyFloat3Array(inferData, i, index_end);
 
             FloatBuffer inferInputs = FloatBuffer.allocate(batchSize * sampleSize);
-            inferInputs = Utils.addFloat3Array(inferInputs, inferInputsBatch);
+            Utils.addFloat3Array(inferInputs, inferInputsBatch);
             Map<String, Object> inputs = new HashMap<>();
             inputs.put("x", inferInputs);
 
@@ -57,14 +57,14 @@ public class RecognizerModelHelper extends ModelHelper{
                 inferLabels[i + b] = index;
             }
             long elapsedTimeMillis = System.currentTimeMillis() - start;
-            timeTag += elapsedTimeMillis;
+
             Log.i("Recognizer infer time", "millis: " + elapsedTimeMillis);
         }
         return inferLabels;
     }
 
     @Override
-    public void train(float[][][] trainingData, int numEpochs) {
-
+    public float train(float[][][] trainingData, int numEpochs) {
+        return (float) 0.0;
     }
 }

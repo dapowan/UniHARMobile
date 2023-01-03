@@ -60,9 +60,9 @@ public abstract class ModelHelper {
 //        return null;
 //    }
 
-    public abstract void train(float[][][] trainingData, float[][] trainingLabels, int numEpochs);
+    public abstract float train(float[][][] trainingData, float[][] trainingLabels, int numEpochs);
 
-    public abstract void train(float[][][] trainingData, int numEpochs);
+    public abstract float train(float[][][] trainingData, int numEpochs);
 
 
     public abstract int[] infer(float[][][] inferData);

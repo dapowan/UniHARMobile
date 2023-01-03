@@ -39,7 +39,7 @@ public class SensorCollector implements SensorEventListener {
         for (int i = 0; i < Config.SENSOR_LISTS.size(); i++){
             Sensor sensor = sensorManager.getDefaultSensor(Config.SENSOR_LISTS.get(i));
             if(sensor != null) {
-                sensorManager.registerListener(this, sensor, Config.SAMPLE_DEPLAY);
+                sensorManager.registerListener(this, sensor, Config.SAMPLE_DEPLAY * 1000);
             }
             else {
                 Log.w("Sensor Missing", Config.SENSOR_NAME_LISTS.get(i));
@@ -98,6 +98,7 @@ public class SensorCollector implements SensorEventListener {
 
     public Hashtable<Integer, float[][]> latestSensorReadings(int num){
         Hashtable<Integer, ArrayList<float[]>> readings = sensorRecorder.getLatestReadings(num);
+        if (readings == null) return null;
         Hashtable<Integer, float[][]> readingsNew = new Hashtable<>();
         for(Map.Entry<Integer, ArrayList<float[]>> entry : readings.entrySet()){
             readingsNew.put(entry.getKey(), Utils.floatListToArray(entry.getValue()));

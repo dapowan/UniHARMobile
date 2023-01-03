@@ -8,6 +8,7 @@ import android.util.Log;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
+import java.io.Console;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
@@ -27,16 +28,16 @@ public class AutoencoderModelHelper extends ModelHelper{
     }
 
     @Override
-    public void train(float[][][] trainingData, int numEpochs) {
-        trainingData = shuffle(trainingData);
+    public float train(float[][][] trainingData, int numEpochs) {
+        shuffle(trainingData);
         int trainingSize = trainingData.length;
         int seqLength = trainingData[0].length;
         int featureSize = trainingData[0][0].length;
         float[] trainingLosses = new float[numEpochs];
-        long timeTag = (long) 0.0;
+        long timeTag = (long) 0;
 
         for (int e = 0; e < numEpochs; ++e) {
-            double[] epochLosses = new double[(int)Math.floor(trainingSize * 1.0 / batchSize)];
+            float[] epochLosses = new float[(int)Math.floor(trainingSize * 1.0 / batchSize)];
             for (int i = 0; i + batchSize <= trainingSize; i += batchSize) {
                 long start = System.currentTimeMillis();
                 float[][][] trainingDataBatch = Utils.copyFloat3Array(trainingData, i, i + batchSize);
@@ -45,11 +46,11 @@ public class AutoencoderModelHelper extends ModelHelper{
 
 
                 FloatBuffer trainingMaskedInput = FloatBuffer.allocate(batchSize * seqLength * featureSize);
-                trainingMaskedInput = Utils.addFloat3Array(trainingMaskedInput, sample.maskedInput);
+                Utils.addFloat3Array(trainingMaskedInput, sample.maskedInput);
                 IntBuffer trainingPos = IntBuffer.allocate(batchSize * sample.maskedLength * 2);
-                trainingPos = Utils.addInt3Array(trainingPos, sample.maskPos);
+                Utils.addInt3Array(trainingPos, sample.maskPos);
                 FloatBuffer trainingMaskedTarget = FloatBuffer.allocate(batchSize * sample.maskedLength * featureSize);
-                trainingMaskedTarget = Utils.addFloat3Array(trainingMaskedTarget, sample.maskedTarget);
+                Utils.addFloat3Array(trainingMaskedTarget, sample.maskedTarget);
 
                 Map<String, Object> inputs = new HashMap<>();
                 inputs.put("x", trainingMaskedInput);
@@ -70,9 +71,11 @@ public class AutoencoderModelHelper extends ModelHelper{
                 timeTag += elapsedTimeMillis;
                 Log.i("Autoencoder training time", "millis: " + elapsedTimeMillis);
             }
-            trainingLosses[e] = (float)Arrays.stream(epochLosses).average().getAsDouble();
+            trainingLosses[e] = Utils.average(epochLosses);
         }
+        Log.i("Autoencoder total training time", "millis: " + timeTag);
         save();
+        return Utils.average(trainingLosses);
     }
 
     public AutoencoderTrainingSample preprocess(float[][][] data, float maskRadio){
@@ -155,7 +158,10 @@ public class AutoencoderModelHelper extends ModelHelper{
         return maskPosWrapped;
     }
 
-    public void train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){}
+    public float train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){
+        Log.w("Encoder training doesn't require labeled data", "");
+        return train(trainingData, numEpochs);
+    }
     public int[] infer(float[][][] inferData){
         return null;
     }

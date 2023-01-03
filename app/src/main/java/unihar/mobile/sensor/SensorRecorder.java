@@ -113,12 +113,12 @@ public class SensorRecorder {
     }
 
     public Hashtable<Integer, ArrayList<float[]>> getLatestReadings(int num){
-        if (num > sensorSet.size()) return null;
         Hashtable<Integer, ArrayList<float[]>> lastetReadings = new Hashtable<>();
         for(Map.Entry<Integer, String> entry : sensorNameSet.entrySet()){
             lastetReadings.put(entry.getKey(), new ArrayList<>());
         }
-        for(int i = sensorSet.size() - num; i < sensorSet.size(); i++){
+        int s = sensorSet.size();
+        for(int i = Math.max(s - num, 0); i < s; i++){
             SensorEventContainer sensorEventContainer = sensorSet.get(i);
             Hashtable<Integer, float[]> readings = sensorEventContainer.getAverageSensorReadings();
             if (readings != null){

@@ -11,6 +11,7 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
 import java.io.BufferedWriter;
@@ -84,8 +85,8 @@ public class Utils {
 
     public static float average(float[] arr) {
         float sum = 0;
-        for (int i = 0; i < arr.length; i++) {
-            sum += arr[i];
+        for (float v : arr) {
+            sum += v;
         }
         return sum / arr.length;
     }
@@ -304,12 +305,21 @@ public class Utils {
         return dataNew;
     }
 
-    public static float[][] concat(float[][] first, float[][] second) {
-        float[][] both = Arrays.copyOf(first, first.length+second.length);
-        System.arraycopy(second, 0, both, first.length, second.length);
-        return both;
+    public static float[][] concatLast(float[][] first, float[][] second) {
+        if(first == null || second == null) return null;
+        if(first.length != second.length || first[0].length != second[0].length) return null;
+        float[][] merged = new float[first.length][first[0].length];
+        for(int i = 0;i < first.length; i++){
+            merged[i] = ArrayUtils.addAll(first[i], second[i]);
+        }
+        return merged;
     }
 
+    public static float[][] randomSample(float[][] data, int size){
+        if (data == null || data.length < size) return null;
+        int is = new Random().nextInt(data.length - size);
+        return Arrays.copyOfRange(data, is, is + size);
+    }
     public static String unifyNumberText(float f){
         return String.format("%.2f", f);
     }

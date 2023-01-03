@@ -52,13 +52,17 @@ public class MainActivity extends AppCompatActivity{
         sensorCollector = new SensorCollector(this);
         modelManger = new ModelManger(this);
         Button testAEBtn = findViewById(R.id.test_ae);
-        testAEBtn.setOnClickListener(v -> modelManger.trainAutoencoder());
+        testAEBtn.setOnClickListener(v -> {
+            Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.SEQUENCE_LENGTH * Config.BATCH_SIZE);
+            String lossInfo = modelManger.trainAutoencoder(readings, Config.EPOCH_NUM_TEST);
+            infoView.setText(String.format("Aotuoencoder Training: %s.", lossInfo));
+        });
 
         Button testREBtn = findViewById(R.id.test_re);
         testREBtn.setOnClickListener(v -> {
             Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.SEQUENCE_LENGTH);
-            String activity = modelManger.inferRealTimeActivity(readings);
-            //TODO
+            String activityInfo = modelManger.inferRealTimeActivity(readings);
+            infoView.setText(String.format("Recognizer Inferece: %s.", activityInfo));
         });
 
 
