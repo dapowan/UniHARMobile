@@ -3,6 +3,8 @@
     <string name="btn_start_on">Start</string>
     <string name="btn_start_off">Stop</string>
     <string name="btn_cancel">Cancel</string>
-    <string name="btn_test_ae">Train</string>
-    <string name="btn_test_re">Infer</string>
+    <string name="btn_ae_train">Train</string>
+    <string name="btn_re_infer">Infer</string>
+    <string name="btn_net_update">Update</string>
+    <string name="btn_net_upload">Upload</string>
 </resources>

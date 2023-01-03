@@ -4,24 +4,18 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Date;
 import java.util.Hashtable;
 
-import unihar.mobile.model.AutoencoderModelHelper;
-import unihar.mobile.model.ModelHelper;
 import unihar.mobile.model.ModelManger;
-import unihar.mobile.model.RecognizerModelHelper;
 import unihar.mobile.sensor.SensorCollector;
 
 public class MainActivity extends AppCompatActivity{
@@ -51,14 +45,14 @@ public class MainActivity extends AppCompatActivity{
         Utils.checkPermission(this);
         sensorCollector = new SensorCollector(this);
         modelManger = new ModelManger(this);
-        Button testAEBtn = findViewById(R.id.test_ae);
+        Button testAEBtn = findViewById(R.id.autoencoder_train);
         testAEBtn.setOnClickListener(v -> {
             Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.SEQUENCE_LENGTH * Config.BATCH_SIZE);
             String lossInfo = modelManger.trainAutoencoder(readings, Config.EPOCH_NUM_TEST);
             infoView.setText(String.format("Aotuoencoder Training: %s.", lossInfo));
         });
 
-        Button testREBtn = findViewById(R.id.test_re);
+        Button testREBtn = findViewById(R.id.recognizer_infer);
         testREBtn.setOnClickListener(v -> {
             Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.SEQUENCE_LENGTH);
             String activityInfo = modelManger.inferRealTimeActivity(readings);

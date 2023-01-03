@@ -95,9 +95,9 @@
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="120dp"
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
-            android:text="Data Control: "
+            android:text="Data Collection: "
             android:textColor="#000000"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -131,21 +131,21 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Recognizer Control: "
+            android:text="Recognizer: "
             android:textColor="#000000"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/test_re"
+            android:id="@+id/recognizer_infer"
             android:layout_width="120dp"
             android:layout_height="40dp"
             android:layout_marginLeft="4dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
             android:backgroundTint="@color/black"
-            android:text="@string/btn_test_re"
-            android:textSize="18sp" />
+            android:text="@string/btn_re_infer"
+            android:textSize="16sp" />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -155,26 +155,61 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Autoencoder Control: "
+            android:text="Autoencoder: "
             android:textColor="#000000"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/test_ae"
+            android:id="@+id/autoencoder_train"
             android:layout_width="120dp"
             android:layout_height="40dp"
             android:layout_marginLeft="4dp"
             android:layout_marginTop="2dp"
             android:layout_marginRight="2dp"
             android:backgroundTint="@color/black"
-            android:text="@string/btn_test_ae"
-            android:textSize="18sp" />
+            android:text="@string/btn_ae_train"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Network: "
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_net_update"
+            android:layout_width="110dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginRight="2dp"
+            android:backgroundTint="@color/black"
+            android:text="@string/btn_net_update"
+            android:textSize="16sp" />
+        <Button
+            android:id="@+id/btn_net_upload"
+            android:layout_width="110dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginRight="2dp"
+            android:backgroundTint="@color/black"
+            android:text="@string/btn_net_upload"
+            android:textSize="16sp" />
 
     </LinearLayout>
     <TextView
         android:id="@+id/info"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
