@@ -2,6 +2,8 @@
     <string name="app_name">UniHARMobile</string>
     <string name="btn_start_on">Start</string>
     <string name="btn_start_off">Stop</string>
+    <string name="btn_activate_on">Activate</string>
+    <string name="btn_activate_off">Stop</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_ae_train">Train</string>
     <string name="btn_re_infer">Infer</string>

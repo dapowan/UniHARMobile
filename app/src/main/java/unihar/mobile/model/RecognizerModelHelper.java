@@ -13,7 +13,6 @@ import unihar.mobile.Utils;
 
 public class RecognizerModelHelper extends ModelHelper{
 
-    private int classNum = Config.ACTIVITY_NUM;
 
     public RecognizerModelHelper(Activity activity, String saveModelPath){
         super(activity, saveModelPath);
@@ -28,6 +27,9 @@ public class RecognizerModelHelper extends ModelHelper{
         int inferSize = inferData.length;
         int sampleSize = inferData[0].length * inferData[0][0].length;
         int[] inferLabels = new int[inferSize];
+
+        int batchSize = Config.getInstance().BATCH_SIZE;
+        int classNum = Config.getInstance().ACTIVITY_NUM;
 
         for (int i = 0; i < inferSize; i += batchSize) {
             long start = System.currentTimeMillis();

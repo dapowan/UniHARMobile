@@ -1,10 +1,15 @@
 package unihar.mobile;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -12,11 +17,18 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
 
 import unihar.mobile.model.ModelManger;
+import unihar.mobile.network.Cacher;
+import unihar.mobile.network.GetJSONTask;
 import unihar.mobile.sensor.SensorCollector;
+import unihar.mobile.sensor.SensorLoader;
 
 public class MainActivity extends AppCompatActivity{
 
@@ -24,16 +36,27 @@ public class MainActivity extends AppCompatActivity{
     private TextView gyrView_x, gyrView_y, gyrView_z;
 
     private EditText recordIDText;
-    private TextView infoView;
     private Button recordBtn;
     private Button cancelBtn;
-//    private RadioGroup labelRadioGroup;
-//    private RadioGroup labelRadioGroupOther;
+    private Button autoencoderBtn;
+    private Button recognizerBtn;
+    private Button activateBtn;
+    private TextView manualInfoView;
+    private TextView autoInfoView;
 
     private int recordNum;
     private SensorCollector sensorCollector;
+    private SensorLoader sensorLoader;
     private ModelManger modelManger;
-    private boolean recorded = false;
+    private int mode = Config.MODE_NONE;
+
+    private Handler autoSensorHandler;
+    private AutoSensorTask autoSensorTask;
+    private Handler autoModelHandler;
+    private AutoModelTask autoModelTask;
+    private long lastIdleTimeTag;
+
+    private Cacher cacher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,25 +64,15 @@ public class MainActivity extends AppCompatActivity{
         recoverRecordNum(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
-
         Utils.checkPermission(this);
+        cacher = new Cacher(this);
         sensorCollector = new SensorCollector(this);
+        sensorLoader = new SensorLoader();
         modelManger = new ModelManger(this);
-        Button testAEBtn = findViewById(R.id.autoencoder_train);
-        testAEBtn.setOnClickListener(v -> {
-            Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.SEQUENCE_LENGTH * Config.BATCH_SIZE);
-            String lossInfo = modelManger.trainAutoencoder(readings, Config.EPOCH_NUM_TEST);
-            infoView.setText(String.format("Aotuoencoder Training: %s.", lossInfo));
-        });
-
-        Button testREBtn = findViewById(R.id.recognizer_infer);
-        testREBtn.setOnClickListener(v -> {
-            Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.SEQUENCE_LENGTH);
-            String activityInfo = modelManger.inferRealTimeActivity(readings);
-            infoView.setText(String.format("Recognizer Inferece: %s.", activityInfo));
-        });
-
-
+        autoSensorHandler = new Handler();
+        autoModelHandler = new Handler();
+        resetIdleTime();
+        initData();
     }
 
     private void initView()
@@ -75,12 +88,28 @@ public class MainActivity extends AppCompatActivity{
         recordIDText.setText(Utils.unifyIDText(recordNum));
         recordBtn = this.findViewById(R.id.record);
         cancelBtn = this.findViewById(R.id.cancel);
-        infoView = this.findViewById(R.id.info);
-//        labelRadioGroup = this.findViewById(R.id.label);
-//        labelRadioGroupOther = this.findViewById(R.id.label_other);
+        manualInfoView = this.findViewById(R.id.info_manual);
+        manualInfoView.setMovementMethod(new ScrollingMovementMethod());
+        autoencoderBtn = findViewById(R.id.autoencoder_train);
+        recognizerBtn = findViewById(R.id.recognizer_infer);
+        activateBtn = findViewById(R.id.activate);
+        autoInfoView = findViewById(R.id.info_auto);
+        autoInfoView.setMovementMethod(new ScrollingMovementMethod());
         bindViewListener();
     }
 
+    private void initData(){
+        String config = cacher.getString(Cacher.NAME_CONFIG);
+        if (config == null){
+            new FetchConfigTask().execute(Config.URL_CONFIG);
+        }else{
+            try {
+                Config.getInstance().load(new JSONObject(config));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     private void bindViewListener()
     {
         recordIDText.setOnEditorActionListener(
@@ -99,7 +128,7 @@ public class MainActivity extends AppCompatActivity{
                                 imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
                                 recordIDText.clearFocus();
                             }else {
-                                Toast toast= Toast.makeText(MainActivity.this,"Input invalid.", Toast.LENGTH_SHORT);
+                                Toast toast= Toast.makeText(MainActivity.this,"Invalid Input.", Toast.LENGTH_SHORT);
                                 toast.show();
                             }
                             return true; // consume.
@@ -110,40 +139,108 @@ public class MainActivity extends AppCompatActivity{
         );
         recordBtn.setOnClickListener(v -> {
             String recordText = Utils.unifyIDText(recordNum);
-            if(recorded){
-                recorded = false;
-                if(sensorCollector.stopRecord(recordText)){
-                    infoView.setText(recordText + " saved successfully!");
+            if (mode == Config.MODE_AUTO){
+                Toast toast= Toast.makeText(MainActivity.this,"Auto mode is still working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }else if(mode == Config.MODE_MANUAL){
+                mode = Config.MODE_NONE;
+                if(sensorCollector.stopRecord(String.format("manual-%s", recordText))){
+                    displayInfo(manualInfoView, String.format("%s saved successfully!", recordText));
+//                    manualInfoView.setText(String.format("%s saved successfully!", recordText));
                 }else {
-                    infoView.setText(recordText + " saved failed! Some file may not be saved successfully.");
+                    displayInfo(manualInfoView, String.format("%s saved failed! Some file may not be saved successfully.", recordText));
+//                    manualInfoView.setText(String.format("%s saved failed! Some file may not be saved successfully.", recordText));
                 }
                 recordBtn.setText(getString(R.string.btn_start_on));
                 recordBtn.setBackgroundColor(getColor(R.color.btn_start_on));
                 recordNum++;
                 recordIDText.setText(recordText);
             }else {
-                recorded = true;
+                mode = Config.MODE_MANUAL;
                 sensorCollector.startRecord();
                 recordBtn.setText(getString(R.string.btn_start_off));
                 recordBtn.setBackgroundColor(getColor(R.color.btn_start_off));
-                infoView.setText(recordText + " start.");
+                displayInfo(manualInfoView, String.format("%s start.", recordText));
+//                manualInfoView.setText(String.format("%s start.", recordText));
 
             }
         });
         cancelBtn.setOnClickListener(v -> {
-            if(recorded){
-                recorded = false;
+            if (mode == Config.MODE_AUTO){
+                Toast toast= Toast.makeText(MainActivity.this,"Auto mode is still working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }else if(mode == Config.MODE_MANUAL){
+                mode = Config.MODE_NONE;
                 sensorCollector.cancelRecord();
-                infoView.setText(Utils.unifyIDText(recordNum) + " cancelled.");
                 recordBtn.setText(getString(R.string.btn_start_on));
                 recordBtn.setBackgroundColor(getColor(R.color.btn_start_on));
+                displayInfo(manualInfoView, String.format("%s cancelled.", Utils.unifyIDText(recordNum)));
+//                manualInfoView.setText(String.format("%s cancelled.", Utils.unifyIDText(recordNum)));
             }else {
                 Toast toast= Toast.makeText(MainActivity.this,"Recorder is not working", Toast.LENGTH_SHORT);
                 toast.show();
             }
         });
-//        labelRadioGroup.setOnCheckedChangeListener(labelChangeListener);
-//        labelRadioGroupOther.setOnCheckedChangeListener(labelChangeListener);
+        recognizerBtn.setOnClickListener(v -> {
+            if(mode == Config.MODE_MANUAL) {
+                new Handler().post(() -> {
+                    Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(Config.getInstance().SEQUENCE_LENGTH);
+                    String activityInfo = modelManger.inferRealTimeActivity(readings);
+                    displayInfo(manualInfoView, String.format("Recognizer Inference: %s.", activityInfo));
+//                    manualInfoView.setText(String.format("Recognizer Inference: %s.", activityInfo));
+                });
+            }else if (mode == Config.MODE_AUTO){
+                Toast toast= Toast.makeText(MainActivity.this,"Auto mode is still working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }else{
+                Toast toast= Toast.makeText(MainActivity.this,"Data collection is not working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        });
+        autoencoderBtn.setOnClickListener(v -> {
+            if(mode == Config.MODE_MANUAL) {
+                new Handler().post(() -> {
+                    int num = Config.getInstance().SEQUENCE_LENGTH * Config.getInstance().BATCH_SIZE;
+                    Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(num);
+                    String lossInfo = modelManger.trainAutoencoder(readings, Config.getInstance().EPOCH_NUM);
+                    displayInfo(manualInfoView, String.format("Autoencoder Training: %s.", lossInfo));
+//                    manualInfoView.setText(String.format("Autoencoder Training: %s.", lossInfo));
+                });
+            }else if (mode == Config.MODE_AUTO){
+                Toast toast= Toast.makeText(MainActivity.this,"Auto mode is still working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }else{
+                Toast toast= Toast.makeText(MainActivity.this,"Data collection is not working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        });
+        activateBtn.setOnClickListener(v -> {
+            if (mode == Config.MODE_MANUAL){
+                Toast toast= Toast.makeText(MainActivity.this,"Manual mode is still working.", Toast.LENGTH_SHORT);
+                toast.show();
+            }else if (mode == Config.MODE_AUTO){
+                mode = Config.MODE_NONE;
+                activateBtn.setText(getString(R.string.btn_activate_on));
+                activateBtn.setBackgroundColor(getColor(R.color.btn_start_on));
+                autoSensorTask.cancel();
+                autoSensorHandler.removeCallbacks(autoSensorTask);
+                autoModelTask.cancel();
+                autoModelHandler.removeCallbacks(autoModelTask);
+                displayInfo(autoInfoView, "Auto mode stops.");
+//                autoInfoView.setText("Auto mode stops.");
+            }else {
+                mode = Config.MODE_AUTO;
+                activateBtn.setText(getString(R.string.btn_activate_off));
+                activateBtn.setBackgroundColor(getColor(R.color.btn_start_off));
+                autoSensorTask = new AutoSensorTask();
+                autoSensorHandler.postDelayed(autoSensorTask, Config.getInstance().AUTO_SENSOR_SAVE_INTERVAL * 1000);
+                autoModelTask = new AutoModelTask();
+                autoModelHandler.post(autoModelTask);
+                displayInfo(autoInfoView, "Auto mode starts.");
+//                autoInfoView.setText("Auto mode starts.");
+            }
+
+        });
     }
 
     public void setSensorText(int sensorType, float[] data){
@@ -163,6 +260,29 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
+    @Override
+    public void onUserInteraction() {
+        super.onUserInteraction();
+        resetIdleTime();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resetIdleTime();
+    }
+
+    private void resetIdleTime(){
+        this.lastIdleTimeTag = System.currentTimeMillis();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        String date = Config.DATE_FORMAT.format(new Date());
+        outState.putInt(date, recordNum);
+    }
+
     private void recoverRecordNum(Bundle savedInstanceState){
         String date = Config.DATE_FORMAT.format(new Date());
         if(savedInstanceState != null && savedInstanceState.getInt(date) != 0) {
@@ -172,47 +292,84 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-//    private final RadioGroup.OnCheckedChangeListener labelChangeListener = new RadioGroup.OnCheckedChangeListener() {
-//        @Override
-//        public void onCheckedChanged(RadioGroup group, int checkedId) {
-//            int id = group.getCheckedRadioButtonId();
-//            int label = Config.LABEL_ACTIVITY_NONE;
-//            switch (id) {
-//                case R.id.label_none:
-//                    label = Config.LABEL_ACTIVITY_NONE;
-//                    clearLabelGroup(labelRadioGroupOther);
-//                    break;
-//                case R.id.label_still:
-//                    label = Config.LABEL_ACTIVITY_STILL;
-//                    clearLabelGroup(labelRadioGroupOther);
-//                    break;
-//                case R.id.label_walk:
-//                    label = Config.LABEL_ACTIVITY_WALKING;
-//                    clearLabelGroup(labelRadioGroupOther);
-//                    break;
-//                case R.id.label_upstairs:
-//                    label = Config.LABEL_ACTIVITY_UPSTAIRS;
-//                    clearLabelGroup(labelRadioGroupOther);
-//                    break;
-//                case R.id.label_downstairs:
-//                    label = Config.LABEL_ACTIVITY_DOWNSTAIRS;
-//                    clearLabelGroup(labelRadioGroupOther);
-//                    break;
-//                case R.id.label_jump:
-//                    label = Config.LABEL_ACTIVITY_JUMP;
-//                    clearLabelGroup(labelRadioGroup);
-//                    break;
-//                default:
-//                    Log.w("Unknown Label", id + "");
-//                    break;
-//            }
-//            if(recorded) sensorCollector.updateLabel(label);
-//        }
-//    };
-//
-//    private void clearLabelGroup(RadioGroup group){
-//        group.setOnCheckedChangeListener(null);
-//        group.clearCheck();
-//        group.setOnCheckedChangeListener(labelChangeListener);
-//    }
+    private void displayInfo(TextView info, String newInfo){
+        info.append("\n" + newInfo);
+//        info.setText(String.format("%s\n%s", info.getText(), newInfo));
+    }
+
+
+    private class AutoSensorTask implements Runnable{
+
+        private long timeTag;
+
+        public AutoSensorTask(){
+            timeTag = System.currentTimeMillis();
+            sensorCollector.startRecord();
+        }
+
+        @Override
+        public void run() {
+            String dateInfo = Config.DATE_FORMAT_AUTO.format(new Date());
+            if(sensorCollector.stopRecord(String.format("auto-%s", dateInfo))){
+                displayInfo(autoInfoView, String.format("%s saved successfully!", dateInfo));
+//                autoInfoView.setText(String.format("%s saved successfully!", dateInfo));
+            }else {
+                displayInfo(autoInfoView, String.format("%s saved failed! Some file may not be saved successfully.", dateInfo));
+//                autoInfoView.setText(String.format("%s saved failed! Some file may not be saved successfully.", dateInfo));
+            }
+            sensorCollector.startRecord();
+            autoSensorHandler.postDelayed(this, Config.getInstance().AUTO_SENSOR_SAVE_INTERVAL * 1000);
+        }
+
+        public void cancel(){
+            sensorCollector.cancelRecord();
+        }
+    }
+
+    private class AutoModelTask implements Runnable{
+
+        private boolean isRunning = true;
+
+        public AutoModelTask(){
+            sensorCollector.startRecord();
+        }
+
+        @Override
+        public void run() {
+            boolean isIdle = (System.currentTimeMillis() - lastIdleTimeTag) > Config.getInstance().AUTO_MODEL_TRAIN_IDLE_TIME * 1000;
+            if (isIdle && Utils.isCharging(MainActivity.this)){
+                ArrayList<String> sensorFiles = sensorLoader.loadSensorFiles();
+                for(String s: sensorFiles){
+                    if (isRunning){
+                        displayInfo(autoInfoView, String.format("Training data from %s.", s));
+//                        autoInfoView.setText(String.format("Training data from %s.", s));
+                        String lossInfo = modelManger.trainAutoencoder(sensorLoader.loadSensorReadings(s), Config.getInstance().EPOCH_NUM);
+                        displayInfo(autoInfoView, String.format("Autoencoder Training: %s.", lossInfo));
+//                        autoInfoView.setText(String.format("Autoencoder Training: %s.", lossInfo));
+                    }
+                }
+            }
+            autoModelHandler.postDelayed(this, Config.getInstance().AUTO_MODEL_TRAIN_INTERVAL * 1000);
+        }
+
+        public void cancel(){
+            isRunning = false;
+        }
+    }
+
+    private class FetchConfigTask extends GetJSONTask
+    {
+        @Override
+        protected void onPostExecute(JSONObject response)
+        {
+            if(response != null){
+                cacher.addString(Cacher.NAME_CONFIG, response.toString());
+                try {
+                    Config.getInstance().load(new JSONObject(response.toString()));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

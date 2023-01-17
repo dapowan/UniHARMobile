@@ -4,12 +4,8 @@ import android.hardware.SensorEvent;
 import android.os.SystemClock;
 import android.util.Log;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Map;
 
 import unihar.mobile.Config;
 import unihar.mobile.Utils;
@@ -20,7 +16,6 @@ public class SensorRecorder {
     private Hashtable<Integer, String> sensorNameSet;
     private int label = Config.LABEL_ACTIVITY_NONE;
     private int samplingDelay;
-    private int bufferMaxNum = Config.BUFFER_MAX_NUM;
 
 
     public SensorRecorder(int samplingDelay) {
@@ -54,8 +49,8 @@ public class SensorRecorder {
                 SensorEventContainer sensorEventContainer = new SensorEventContainer(timeTag, label);
                 sensorEventContainer.insertSensorEvent(sensorType, sensorEvent.values);
                 sensorSet.add(sensorEventContainer);
-                if (sensorSet.size() - bufferMaxNum > 0) {
-                    sensorSet.subList(0, sensorSet.size() - bufferMaxNum).clear();
+                if (sensorSet.size() - Config.BUFFER_MAX_NUM > 0) {
+                    sensorSet.subList(0, sensorSet.size() - Config.BUFFER_MAX_NUM).clear();
                 }
             } else {
                 SensorEventContainer sensorEventContainer = sensorSet.get(s - 1);
@@ -67,43 +62,17 @@ public class SensorRecorder {
     }
 
     public boolean saveData(String filePath){
-        ArrayList<Integer> sensors = new ArrayList<>();
-        StringBuilder header = new StringBuilder();
-        header.append("Timestamp,");
-        for(Map.Entry<Integer, String> entry : sensorNameSet.entrySet()){
-            sensors.add(entry.getKey());
-            header.append(entry.getValue()).append("_x,");
-            header.append(entry.getValue()).append("_y,");
-            header.append(entry.getValue()).append("_z,");
-        }
-        header.append("Label");
         ArrayList<String> data = new ArrayList<>();
-        data.add(header.toString());
+        data.add(SensorEventContainer.headerString());
         for(int i = 0; i < sensorSet.size(); i++){
             SensorEventContainer sensorEventContainer = sensorSet.get(i);
-            Hashtable<Integer, float[]> readings = sensorEventContainer.getAverageSensorReadings();
-            if (readings != null){
-                StringBuilder item = new StringBuilder();
-                item.append(sensorEventContainer.timeTag).append(',');
-                boolean tag = true;
-                for(int j = 0; j < sensors.size(); j++){
-                    if (readings.containsKey(sensors.get(j)) && readings.get(sensors.get(j)) != null){
-                        item.append(Utils.floatArrayToString(readings.get(sensors.get(j))));
-                        item.append(',');
-                    }else {
-                        tag = false;
-                    }
-                }
-                item.append(sensorEventContainer.label);
-                if (tag){
-                    data.add(item.toString());
-                }
-            }
+            String item = SensorEventContainer.toCSVString(sensorEventContainer);
+            if (item != null) data.add(item);
         }
         clearSensorData();
         if (data.size() > 0) {
 
-            return Utils.saveFile(filePath + "_" + samplingDelay + ".csv", data);
+            return Utils.saveSensorFile(filePath + "-" + samplingDelay + ".csv", data);
         }
         return false;
     }
@@ -112,75 +81,9 @@ public class SensorRecorder {
         sensorSet.clear();
     }
 
-    public Hashtable<Integer, ArrayList<float[]>> getLatestReadings(int num){
-        Hashtable<Integer, ArrayList<float[]>> lastetReadings = new Hashtable<>();
-        for(Map.Entry<Integer, String> entry : sensorNameSet.entrySet()){
-            lastetReadings.put(entry.getKey(), new ArrayList<>());
-        }
-        int s = sensorSet.size();
-        for(int i = Math.max(s - num, 0); i < s; i++){
-            SensorEventContainer sensorEventContainer = sensorSet.get(i);
-            Hashtable<Integer, float[]> readings = sensorEventContainer.getAverageSensorReadings();
-            if (readings != null){
-                for(Map.Entry<Integer, float[]> entry : readings.entrySet()){
-                    if (lastetReadings.containsKey(entry.getKey()) && entry.getValue() != null)
-                    {
-                        lastetReadings.get(entry.getKey()).add(entry.getValue());
-                    }else {
-                        return null;
-                    }
-                }
-            }
-        }
-        return lastetReadings;
+    public ArrayList<SensorEventContainer> getLatestReadings(int num){
+        int is = Math.max(sensorSet.size() - num - 1, 1); // skip the first the latest event
+        return Utils.subArrayList(sensorSet, is, sensorSet.size() - 1);
     }
 
-    public void setBufferMaxNum(int bufferMaxNum) {
-        this.bufferMaxNum = bufferMaxNum;
-    }
-
-    private class SensorEventContainer{
-
-        public long timeTag;
-        public int label;
-        public Hashtable<Integer, ArrayList<float[]>> sensorEvents;
-
-        public SensorEventContainer(long timeTag, int label){
-            this.timeTag = timeTag;
-            this.label = label;
-            this.sensorEvents = new Hashtable<>();
-        }
-
-        public void insertSensorEvent(int sensorType, float[] sensorValues){
-            if(sensorEvents.containsKey(sensorType)){
-                sensorEvents.get(sensorType).add(sensorValues);
-            }else{
-                ArrayList<float[]> sensor = new ArrayList<>();
-                sensor.add(sensorValues);
-                sensorEvents.put(sensorType, sensor);
-            }
-
-        }
-
-        public Hashtable<Integer, float[]> getAverageSensorReadings(){
-            Hashtable<Integer, float[]> averageReadings = new Hashtable<>();
-            for(Map.Entry<Integer, ArrayList<float[]>> entry : sensorEvents.entrySet()){
-                int sensorEventNum = entry.getValue().size();
-                if(sensorEventNum == 0){
-                    return null;
-                }
-                int sensorReadingNum = entry.getValue().get(0).length;
-                float[] sensorAverageReadings = new float[sensorReadingNum];
-                for(int i = 0; i < sensorReadingNum; i++){
-                    float[] values = new float[sensorEventNum];
-                    for(int j = 0; j < sensorEventNum; j++){
-                        values[j] = entry.getValue().get(j)[i];
-                    }
-                    sensorAverageReadings[i] = Utils.average(values);
-                }
-                averageReadings.put(entry.getKey(), sensorAverageReadings);
-            }
-            return averageReadings;
-        }
-    }
 }

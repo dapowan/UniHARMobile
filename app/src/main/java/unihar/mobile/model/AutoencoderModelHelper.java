@@ -21,8 +21,6 @@ import unihar.mobile.Utils;
 
 public class AutoencoderModelHelper extends ModelHelper{
 
-    private float maskRatio = Config.MASK_RATIO;
-
     public AutoencoderModelHelper(Activity activity, String saveModelPath){
         super(activity, saveModelPath);
     }
@@ -36,6 +34,9 @@ public class AutoencoderModelHelper extends ModelHelper{
         float[] trainingLosses = new float[numEpochs];
         long timeTag = (long) 0;
 
+        int batchSize = Config.getInstance().BATCH_SIZE;
+        float maskRatio = Config.getInstance().MASK_RATIO;
+
         for (int e = 0; e < numEpochs; ++e) {
             float[] epochLosses = new float[(int)Math.floor(trainingSize * 1.0 / batchSize)];
             for (int i = 0; i + batchSize <= trainingSize; i += batchSize) {
@@ -43,7 +44,6 @@ public class AutoencoderModelHelper extends ModelHelper{
                 float[][][] trainingDataBatch = Utils.copyFloat3Array(trainingData, i, i + batchSize);
 
                 AutoencoderTrainingSample sample = preprocess(trainingDataBatch.clone(), maskRatio);
-
 
                 FloatBuffer trainingMaskedInput = FloatBuffer.allocate(batchSize * seqLength * featureSize);
                 Utils.addFloat3Array(trainingMaskedInput, sample.maskedInput);

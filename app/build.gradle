@@ -28,9 +28,9 @@ android {
     }
     buildFeatures {
         mlModelBinding true
+        viewBinding true
     }
 }
-
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.5.1'
@@ -46,6 +46,7 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.3'
     implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.11.0'
 
+    implementation 'commons-io:commons-io:2.11.0'
     implementation 'org.apache.commons:commons-lang3:3.0'
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
 }

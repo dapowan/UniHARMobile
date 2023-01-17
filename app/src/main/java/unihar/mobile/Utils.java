@@ -2,21 +2,27 @@ package unihar.mobile;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,14 +62,21 @@ public class Utils {
                 activity.startActivity(intent);
             }
         }else {
-            if(activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-                    PackageManager.PERMISSION_GRANTED){ // && activity.checkSelfPermission(Manifest.permission.MANAGE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+            if(activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                    && activity.checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED){ // && activity.checkSelfPermission(Manifest.permission.MANAGE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
                 //do whatever you want here
             }else{
-                String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE}; // , Manifest.permission.MANAGE_EXTERNAL_STORAGE
+                String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.INTERNET}; // , Manifest.permission.MANAGE_EXTERNAL_STORAGE
                 activity.requestPermissions(permissions, 101);
             }
         }
+    }
+
+    public static boolean isCharging(Context context){
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = context.registerReceiver(null, ifilter);
+        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        return status == BatteryManager.BATTERY_STATUS_CHARGING;
     }
 
     public static boolean createFolder(String folderPath){
@@ -267,7 +280,7 @@ public class Utils {
         return rotations;
     }
 
-    public static boolean saveFile(String path, ArrayList<String> data){
+    public static boolean saveSensorFile(String path, ArrayList<String> data){
         File file = new File(path);
         try {
             if(file.exists()) file.delete();
@@ -287,6 +300,35 @@ public class Utils {
             Log.e("file create error", path);
         }
         return false;
+    }
+
+    public static ArrayList<String> loadSensorFile(String path){
+        File file = new File(path);
+        try {
+            if(file.exists()) {
+                FileReader fr = new FileReader(file);
+                BufferedReader br = new BufferedReader(fr);
+
+                ArrayList<String> data = new ArrayList<>();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    data.add(line);
+                }
+                return data;
+            }
+        }catch (Exception e){
+            Log.e("file read error", path);
+        }
+        return null;
+    }
+
+    public static <T> ArrayList<T> subArrayList(ArrayList<T> data, int fromIndex, int toIndex){
+        if (fromIndex < 0 || toIndex > data.size()) return null;
+        ArrayList<T> re = new ArrayList<>();
+        for(int i = fromIndex; i < toIndex; i++){
+            re.add(data.get(i));
+        }
+        return re;
     }
 
     public static float[][] floatListToArray(ArrayList<float[]> data){

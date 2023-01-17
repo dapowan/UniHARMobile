@@ -18,7 +18,6 @@ import unihar.mobile.Utils;
 public abstract class ModelHelper {
 
     protected Interpreter interpreter;
-    protected int batchSize;
     protected String saveModelPath;
     protected Activity activity;
 
@@ -26,6 +25,7 @@ public abstract class ModelHelper {
         this.activity = activity;
         this.saveModelPath = saveModelPath;
     }
+
 
     public void initFromAsset(String assetName){
         MappedByteBuffer modelBuffer = null;
@@ -90,11 +90,4 @@ public abstract class ModelHelper {
         }
     }
 
-    public int getBatchSize() {
-        return batchSize;
-    }
-
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
 }
