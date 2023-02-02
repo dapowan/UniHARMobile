@@ -1,5 +1,9 @@
 package unihar.mobile;
 
+import static android.os.AsyncTask.THREAD_POOL_EXECUTOR;
+
+import static unihar.mobile.Utils.getNum;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -26,7 +30,9 @@ import java.util.Hashtable;
 
 import unihar.mobile.model.ModelManger;
 import unihar.mobile.network.Cacher;
+import unihar.mobile.network.GetFileTask;
 import unihar.mobile.network.GetJSONTask;
+import unihar.mobile.network.PostFileTask;
 import unihar.mobile.sensor.SensorCollector;
 import unihar.mobile.sensor.SensorLoader;
 
@@ -40,6 +46,8 @@ public class MainActivity extends AppCompatActivity{
     private Button cancelBtn;
     private Button autoencoderBtn;
     private Button recognizerBtn;
+    private Button networkUpdateBtn;
+    private Button networkUploadBtn;
     private Button activateBtn;
     private TextView manualInfoView;
     private TextView autoInfoView;
@@ -55,6 +63,8 @@ public class MainActivity extends AppCompatActivity{
     private Handler autoModelHandler;
     private AutoModelTask autoModelTask;
     private long lastIdleTimeTag;
+
+    private int trainingSize;
 
     private Cacher cacher;
 
@@ -88,6 +98,8 @@ public class MainActivity extends AppCompatActivity{
         recordIDText.setText(Utils.unifyIDText(recordNum));
         recordBtn = this.findViewById(R.id.record);
         cancelBtn = this.findViewById(R.id.cancel);
+        networkUpdateBtn = this.findViewById(R.id.btn_net_update);
+        networkUploadBtn = this.findViewById(R.id.btn_net_upload);
         manualInfoView = this.findViewById(R.id.info_manual);
         manualInfoView.setMovementMethod(new ScrollingMovementMethod());
         autoencoderBtn = findViewById(R.id.autoencoder_train);
@@ -202,6 +214,7 @@ public class MainActivity extends AppCompatActivity{
                 new Handler().post(() -> {
                     int num = Config.getInstance().SEQUENCE_LENGTH * Config.getInstance().BATCH_SIZE;
                     Hashtable<Integer, float[][]> readings = sensorCollector.latestSensorReadings(num);
+                    trainingSize += getNum(readings);
                     String lossInfo = modelManger.trainAutoencoder(readings, Config.getInstance().EPOCH_NUM);
                     displayInfo(manualInfoView, String.format("Autoencoder Training: %s.", lossInfo));
 //                    manualInfoView.setText(String.format("Autoencoder Training: %s.", lossInfo));
@@ -213,6 +226,15 @@ public class MainActivity extends AppCompatActivity{
                 Toast toast= Toast.makeText(MainActivity.this,"Data collection is not working.", Toast.LENGTH_SHORT);
                 toast.show();
             }
+        });
+        networkUpdateBtn.setOnClickListener(v -> {
+            new FetchConfigTask().executeOnExecutor(THREAD_POOL_EXECUTOR, Config.URL_CONFIG);
+            new FetchModelTask(Config.MODEL_NAME_AUTOENCODER, Config.SAVE_PATH_MODEL_AUTOENCODER).executeOnExecutor(THREAD_POOL_EXECUTOR, Config.URL_AUTOENCODER);
+            new FetchModelTask(Config.MODEL_NAME_RECOGNIZER, Config.SAVE_PATH_MODEL_RECOGNIZER).executeOnExecutor(THREAD_POOL_EXECUTOR, Config.URL_RECOGNIZER);
+        });
+        networkUploadBtn.setOnClickListener(v -> {
+            new UploadModelTask(Config.MODEL_NAME_AUTOENCODER, Config.getMetaInfo(), Config.SAVE_PATH_MODEL_AUTOENCODER, trainingSize)
+                    .executeOnExecutor(THREAD_POOL_EXECUTOR, Config.URL_UPLOAD);
         });
         activateBtn.setOnClickListener(v -> {
             if (mode == Config.MODE_MANUAL){
@@ -343,7 +365,9 @@ public class MainActivity extends AppCompatActivity{
                     if (isRunning){
                         displayInfo(autoInfoView, String.format("Training data from %s.", s));
 //                        autoInfoView.setText(String.format("Training data from %s.", s));
-                        String lossInfo = modelManger.trainAutoencoder(sensorLoader.loadSensorReadings(s), Config.getInstance().EPOCH_NUM);
+                        Hashtable<Integer, float[][]> readings = sensorLoader.loadSensorReadings(s);
+                        trainingSize += getNum(readings);
+                        String lossInfo = modelManger.trainAutoencoder(readings, Config.getInstance().EPOCH_NUM);
                         displayInfo(autoInfoView, String.format("Autoencoder Training: %s.", lossInfo));
 //                        autoInfoView.setText(String.format("Autoencoder Training: %s.", lossInfo));
                     }
@@ -365,10 +389,53 @@ public class MainActivity extends AppCompatActivity{
             if(response != null){
                 cacher.addString(Cacher.NAME_CONFIG, response.toString());
                 try {
-                    Config.getInstance().load(new JSONObject(response.toString()));
+                    boolean result = Config.getInstance().load(new JSONObject(response.toString()));
+                    if(result){
+                        displayInfo(manualInfoView, "Config data is updated.");
+                    }else{
+                        displayInfo(manualInfoView, "Config data update fails.");
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+            }
+        }
+    }
+
+    private class FetchModelTask extends GetFileTask{
+
+        private String model;
+
+        public FetchModelTask(String model, String filePath) {
+            super(filePath);
+            this.model = model;
+        }
+
+        protected void onPostExecute(Boolean re)
+        {
+            if(re){
+                modelManger.update(this.model);
+                displayInfo(manualInfoView, this.model + " is updated.");
+            }else{
+                displayInfo(manualInfoView, this.model + " update fails.");
+            }
+        }
+    }
+
+    private class UploadModelTask extends PostFileTask {
+
+        public UploadModelTask(String fileName, String metaInfo, String filePath, int trainingSize) {
+            super(fileName, metaInfo, filePath, trainingSize);
+        }
+
+        protected void onPostExecute(Boolean re)
+        {
+            if(re){
+                modelManger.update(this.fileName);
+                displayInfo(manualInfoView, this.fileName + " is uploaded.");
+                trainingSize = 0;
+            }else{
+                displayInfo(manualInfoView, this.fileName + " upload fails.");
             }
         }
     }

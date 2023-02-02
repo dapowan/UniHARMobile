@@ -1,5 +1,7 @@
 package unihar.mobile;
 
+import static unihar.mobile.Config.SENSOR_ACCELEROMETER;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
@@ -34,6 +36,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.Random;
 import java.util.stream.IntStream;
 
@@ -72,6 +75,7 @@ public class Utils {
         }
     }
 
+
     public static boolean isCharging(Context context){
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = context.registerReceiver(null, ifilter);
@@ -96,6 +100,13 @@ public class Utils {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
+    public static int getNum(Hashtable<Integer, float[][]> readings){
+        if (readings.containsKey(SENSOR_ACCELEROMETER))
+            return readings.get(SENSOR_ACCELEROMETER).length;
+        else {
+            return 0;
+        }
+    }
     public static float average(float[] arr) {
         float sum = 0;
         for (float v : arr) {

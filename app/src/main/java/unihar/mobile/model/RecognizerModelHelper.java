@@ -16,7 +16,6 @@ public class RecognizerModelHelper extends ModelHelper{
 
     public RecognizerModelHelper(Activity activity, String saveModelPath){
         super(activity, saveModelPath);
-        saveModelPath = Config.SAVE_PATH + File.separator + "recognizer.ckpt";
     }
 
     public float train(float[][][] trainingData, float[][] trainingLabels, int numEpochs){

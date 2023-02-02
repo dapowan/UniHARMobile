@@ -19,16 +19,24 @@ import java.util.UUID;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class PostFileTask extends AsyncTask<String, Void, String>
+public class PostFileTask extends AsyncTask<String, Void, Boolean>
 {
+    protected String fileName;
+    protected String metaInfo;
+    protected String filePath;
+    protected int trainingSize;
+
+    public PostFileTask(String fileName, String metaInfo, String filePath, int trainingSize){
+        this.fileName = fileName;
+        this.metaInfo = metaInfo;
+        this.filePath = filePath;
+        this.trainingSize = trainingSize;
+    }
 
     @Override
-    protected String doInBackground(String... params)
+    protected Boolean doInBackground(String... params)
     {
         String str = params[0];
-        String fileName = params[1];
-        String fileInfo = params[2];
-        String filePath = params[3];
         HttpURLConnection urlConn;
         BufferedReader bufferedReader = null;
         String result;
@@ -41,61 +49,44 @@ public class PostFileTask extends AsyncTask<String, Void, String>
             urlConn.setRequestMethod("POST");
             urlConn.setDoInput(true);
             urlConn.setDoOutput(true);
-            urlConn.setRequestProperty("Content-Type", "application/json");
 
             String auth = "unihar_mobile";
-            urlConn.setRequestProperty("Authorization", auth);
+            urlConn.setRequestProperty("authorization", auth);
 
             String boundary = UUID.randomUUID().toString();
-            urlConn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-
+            urlConn.setRequestProperty("content-Type", "multipart/form-data;boundary=" + boundary);
+            urlConn.setRequestProperty("file-name", fileName);
+            urlConn.setRequestProperty("other-info", metaInfo);
+            urlConn.setRequestProperty("training-size", "" + trainingSize);
             DataOutputStream request = new DataOutputStream(urlConn.getOutputStream());
 
-            request.writeBytes("--" + boundary + "\r\n");
-            request.writeBytes("Content-Disposition: form-data; name=\"description\"\r\n\r\n");
-            request.writeBytes(fileInfo + "\r\n");
-
-            request.writeBytes("--" + boundary + "\r\n");
-            request.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n\r\n");
+//            request.writeBytes("--" + boundary + "\r\n");
+//            request.writeBytes("Content-Disposition: form-data; name=\"description\"\r\n\r\n");
+//            request.writeBytes(fileInfo + "\r\n");
+//
+//            request.writeBytes("--" + boundary + "\r\n");
+//            request.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n\r\n");
             request.write(FileUtils.readFileToByteArray(new File(filePath)));
-            request.writeBytes("\r\n");
-
-            request.writeBytes("--" + boundary + "--\r\n");
+//            request.writeBytes("\r\n");
+//
+//            request.writeBytes("--" + boundary + "--\r\n");
             request.flush();
             request.close();
 
             int responseCode=urlConn.getResponseCode();
             if (responseCode == HttpsURLConnection.HTTP_OK) {
-                String line;
-                StringBuilder stringBuilder = new StringBuilder();
-                bufferedReader = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-                result = stringBuilder.toString();
+                return true;
             }
             else {
-                Log.e("message", "upload records fail");
-                result = null;
+                Log.e("message", "Model upload fails");
             }
 
         }
         catch(Exception ex)
         {
-            Log.e("Fetch Error", "Can not get json data.", ex);
-            result = null;
+            Log.e("Upload Error", "Can not upload json data.", ex);
         }
-        finally
-        {
-            if(bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return result;
+        return false;
     }
 
 }

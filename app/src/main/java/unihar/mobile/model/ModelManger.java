@@ -1,6 +1,10 @@
 package unihar.mobile.model;
 
+import static unihar.mobile.Config.ASSET_NAME_AUTOENCODER;
+import static unihar.mobile.Config.ASSET_NAME_RECOGNIZER;
+
 import android.app.Activity;
+import android.util.Log;
 
 import java.util.Hashtable;
 
@@ -15,11 +19,18 @@ public class ModelManger {
     public ModelManger(Activity activity){
         autoencoder = new AutoencoderModelHelper(activity, Config.SAVE_PATH_MODEL_AUTOENCODER);
         recognizer = new RecognizerModelHelper(activity, Config.SAVE_PATH_MODEL_RECOGNIZER);
-        autoencoder.initFromAsset("ae.tflite");
-        recognizer.initFromAsset("re.tflite");
+        autoencoder.initFromAsset(ASSET_NAME_AUTOENCODER);
+        recognizer.initFromAsset(ASSET_NAME_RECOGNIZER);
     }
 
-    public void update(){
+    public void update(String path){
+        if (path.equals(Config.MODEL_NAME_AUTOENCODER)){
+            autoencoder.restore();
+        }else if (path.equals(Config.MODEL_NAME_RECOGNIZER)){
+            recognizer.restore();
+        }else {
+            Log.w("Model Update", "Unknown model");
+        }
     }
 
     public String trainAutoencoder(Hashtable<Integer, float[][]> readings, int numEpoch){

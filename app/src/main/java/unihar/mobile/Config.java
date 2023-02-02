@@ -1,6 +1,7 @@
 package unihar.mobile;
 
 import android.hardware.Sensor;
+import android.os.Build;
 import android.os.Environment;
 
 import org.checkerframework.checker.units.qual.A;
@@ -37,15 +38,24 @@ public class Config {
 
     public static final String SAVE_PATH = Environment.getExternalStorageDirectory().getPath() + File.separator + "UniHAR_Sensor";
 
-    public static final String SAVE_PATH_MODEL_AUTOENCODER = Config.SAVE_PATH + File.separator + "autoencoder.ckpt";
-    public static final String SAVE_PATH_MODEL_RECOGNIZER = Config.SAVE_PATH + File.separator + "recognizer.ckpt";
+    public static final String ASSET_NAME_AUTOENCODER = "autoencoder.tflite";
+    public static final String ASSET_NAME_RECOGNIZER = "recognizer.tflite";
+    public static final String MODEL_NAME_AUTOENCODER = "autoencoder";
+    public static final String MODEL_NAME_RECOGNIZER = "recognizer";
+    public static final String SAVE_PATH_MODEL_AUTOENCODER = Config.SAVE_PATH + File.separator + MODEL_NAME_AUTOENCODER + ".ckpt";
+    public static final String SAVE_PATH_MODEL_RECOGNIZER = Config.SAVE_PATH + File.separator + MODEL_NAME_RECOGNIZER + ".ckpt";
+    public static final String SAVE_PATH_MODEL_TEST = Config.SAVE_PATH + File.separator + "test.ckpt";
 
     public static final int MODE_NONE = -1;
     public static final int MODE_AUTO = 0;
     public static final int MODE_MANUAL = 1;
 
-    private static final String URL_SERVER = "http://192.168.137.1:8080/";
+    private static final String CLIENT = "DEMO";
+    private static final String URL_SERVER = "http://192.168.137.1:8081/";
     public static final String URL_CONFIG = URL_SERVER + "config.json";
+    public static final String URL_AUTOENCODER = URL_SERVER + "autoencoder.ckpt";
+    public static final String URL_RECOGNIZER = URL_SERVER + "recognizer.ckpt";
+    public static final String URL_UPLOAD = URL_SERVER + "";
 
     public int SAMPLE_INTERVAL = 50; // 50ms = sampling rate 20Hz
     public float SENSOR_DIRTY_RATE = 0.04f;
@@ -82,7 +92,7 @@ public class Config {
             ACTIVITY_NAME_LIST = names;
             BATCH_SIZE = data.getInt("batch_size");
             MASK_RATIO = (float) data.getDouble("mask_ratio");
-            SEQUENCE_LENGTH = data.getInt("sample_interval");
+            SEQUENCE_LENGTH = data.getInt("sequence_length");
             EPOCH_NUM = data.getInt("epoch_num");
             AUTO_SENSOR_SAVE_INTERVAL = data.getInt("auto_sensor_save_interval");
             AUTO_MODEL_TRAIN_INTERVAL = data.getInt("auto_model_train_interval");
@@ -93,5 +103,41 @@ public class Config {
             return false;
         }
         return true;
+    }
+
+    public static String getMetaInfo(){
+        return CLIENT + "_" + getDeviceName() + "_" + getAndroidVersion();
+    }
+    public static String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.toLowerCase().startsWith(manufacturer.toLowerCase())) {
+            return capitalize(model);
+        } else {
+            return capitalize(manufacturer) + " " + model;
+        }
+    }
+
+    public static String getAndroidVersion() {
+        String versionName = "Android ";
+
+        try {
+            versionName += String.valueOf(Build.VERSION.RELEASE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return versionName;
+    }
+
+    private static String capitalize(String s) {
+        if (s == null || s.length() == 0) {
+            return "";
+        }
+        char first = s.charAt(0);
+        if (Character.isUpperCase(first)) {
+            return s;
+        } else {
+            return Character.toUpperCase(first) + s.substring(1);
+        }
     }
 }

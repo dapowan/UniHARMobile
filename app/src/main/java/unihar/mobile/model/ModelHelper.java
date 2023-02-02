@@ -35,13 +35,13 @@ public abstract class ModelHelper {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        restore();
+//        restore();
     }
 
     public void initFromFile(String modelName){
         File modelFile = new File(Config.SAVE_PATH + File.separator + modelName);
         interpreter = new Interpreter(modelFile); // , getOptions()
-        restore();
+//        restore();
     }
 
 //    private Interpreter.Options getOptions(){
