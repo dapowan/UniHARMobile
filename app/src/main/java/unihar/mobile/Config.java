@@ -51,14 +51,14 @@ public class Config {
     public static final int MODE_MANUAL = 1;
 
     private static final String CLIENT = "DEMO";
-    private static final String URL_SERVER = "http://192.168.137.1:8081/";
+    private static final String URL_SERVER = "http://192.168.137.1:8080/";
     public static final String URL_CONFIG = URL_SERVER + "config.json";
     public static final String URL_AUTOENCODER = URL_SERVER + "autoencoder.ckpt";
     public static final String URL_RECOGNIZER = URL_SERVER + "recognizer.ckpt";
     public static final String URL_UPLOAD = URL_SERVER + "";
 
     public int SAMPLE_INTERVAL = 50; // 50ms = sampling rate 20Hz
-    public float SENSOR_DIRTY_RATE = 0.04f;
+    public float SENSOR_DIRTY_RATE = 0.05f;
 
     public int ACTIVITY_NUM = 4;
     public String[] ACTIVITY_NAME_LIST = {"Still", "Walking", "Walking upstairs", "Walking downstairs"};

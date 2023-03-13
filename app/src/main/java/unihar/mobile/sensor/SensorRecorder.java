@@ -82,7 +82,7 @@ public class SensorRecorder {
     }
 
     public ArrayList<SensorEventContainer> getLatestReadings(int num){
-        int is = Math.max(sensorSet.size() - num - 1, 1); // skip the first the latest event
+        int is = Math.max(sensorSet.size() - num - 1, 3); // skip the first 3 the latest event
         return Utils.subArrayList(sensorSet, is, sensorSet.size() - 1);
     }
 
